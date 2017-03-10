@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        div,
+        img,
+        button,
+        li,
+        ul {
+            padding: 0px;
+            margin: 0px;
+        }
+        
+        div#small-img {
+            width: 100px;
+            height: auto;
+            position: absolute;
+            top: 100px;
+            left: 40px;
+        }
+        
+        div#small-img img {
+            filter: alpha(opacity: 60);
+            opacity: 0.6;
+            display: block;
+            margin-top: 20px;
+            border: 2px solid black;
+            border-radius: 8px;
+            transition: 1s;
+        }
+        
+        button {
+            position: absolute;
+            left: 40px;
+            top: 40px;
+            width: 100px;
+            height: 20px;
+        }
+        
+        div#box {
+            width: 429px;
+            position: absolute;
+            top: 50px;
+            left: 200px;
+            height: 429px;
+            margin: auto;
+            border: 5px solid lightgray;
+            background-image: url(image/games/b1.jpg);
+        }
+        
+        div#small-img img.hover {
+            border: 2px solid orange;
+            filter: alpha(opacity: 100);
+            opacity: 1;
+        }
+        
+        div#box ul {
+            overflow: hidden;
+            width: 429px;
+            height: 429px;
+        }
+        
+        div#box li {
+            width: 143px;
+            height: 143px;
+            overflow: hidden;
+            position: absolute;
+            list-style-type: none;
+            z-index: 2;
+        }
+        
+        div#box li div.hide {
+            width: 139px;
+            height: 139px;
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            background-color: red;
+            filter: alpha(opacity: 40);
+            opacity: 0.4;
+            border: 2px solid yellow;
+        }
+
+    </style>
+    <script type="text/javascript">
+        window.onload = function() {
+            var osmallBox = document.getElementById("small-img");
+            var osmallImg = osmallBox.getElementsByTagName("img");
+            var obtn = document.getElementsByTagName("button")[0];
+            var obox = document.getElementById("box");
+            var imgPath = 1; //说明目前图片是第几张
+            var imgArr = []; //图片放置数组
+            var bmove = false; //确认能否拖拽
+            var zindex = 3; //保证拖拽层处于页面最上方
+            var arrX = []; //放置图片left坐标
+            var arrY = []; //放置图片top坐标
+            var rightX = []; //left坐标原始生态
+            var rightY = []; //top坐标原始生态
+            var time1,time2;
+
+            //初始图片设置
+            for (var i = 0; i < 9; i++) imgArr[i] = i;
+            setImg();
+            //小图鼠标事件
+            for (var i = 0; i < osmallImg.length; i++) {
+                osmallImg[i].index = i;
+                //移入移出透明度效果
+                osmallImg[i].onmouseover = function() {
+                    this.className = "hover";
+                }
+                osmallImg[i].onmouseout = function() {
+                        if (this.index != (imgPath - 1)) {
+                            this.className = "";
+                        }
+                    }
+                    //点击效果
+                osmallImg[i].onclick = function() {
+                    for (var j = 0; j < osmallImg.length; j++) {
+                        osmallImg[j].className = "";
+                    }
+                    this.className = "hover";
+                    imgPath = this.index + 1;
+                    //使数组的数由小到大排序
+                    imgArr.sort(function(a, b) {
+                        return a - b;
+                    });
+                    obox.removeChild(obox.firstChild);
+                    bmove = false;
+                    setImg();
+                }
+            }
+            //点击按钮图片打混处理
+            obtn.onclick = function() {
+                //数组随便打混
+                imgArr.sort(function(a, b) {
+                    return Math.random() > 0.5 ? -1 : 1;
+                });
+                bmove = true;
+                //移除当前的图片
+                obox.removeChild(obox.firstChild);
+                time1  = new Date().getTime() ;
+                setImg();
+            }
+            //图片按数组摆放
+            function setImg() {
+                //背景图片更换
+                obox.style.backgroundImage = "url(image/games/b" + imgPath + ".jpg)";
+
+                var fragment = document.createDocumentFragment();
+                var oul = document.createElement("ul");
+                for (var i = 0; i < imgArr.length; i++) {
+                    var oli = document.createElement("li");
+                    var oimg = document.createElement("img");
+                    var img = new Image();
+                    oimg.src = img.src = "image/games/" + imgPath + "_" + imgArr[i] + ".jpg";
+                    oli.appendChild(oimg);
+                    oul.appendChild(oli);
+                }
+                fragment.appendChild(oul);
+                obox.appendChild(fragment);
+
+                var ditanceX = oul.children[0].offsetWidth;
+                var ditanceY = oul.children[0].offsetHeight;
+                for (var i = 0; i < oul.children.length; i++) {
+
+                    oul.children[i].index = i;
+
+                    //图片位置摆放
+                    if (i < 3) {
+                        oul.children[i].style.left = i * ditanceX + "px";
+                        oul.children[i].style.top = 0;
+                    } else if (i < 6) {
+                        oul.children[i].style.top = ditanceY + "px";
+                        oul.children[i].style.left = (i - 3) * ditanceX + "px";
+                    } else {
+                        oul.children[i].style.top = 2 * ditanceY + "px";
+                        oul.children[i].style.left = (i - 6) * ditanceX + "px";
+                    }
+
+                    rightX[i] = oul.children[i].offsetLeft;
+                    rightY[i] = oul.children[i].offsetTop;
+
+                    arrX[i] = rightX[i];
+                    arrY[i] = rightY[i];
+
+                    drag(obox.children[0].children[i]);
+
+                }
+            }
+            //遮挡层
+            var shadow1, shadow;
+            shadows();
+            function shadows() {
+                shadow = document.createElement("div");
+                shadow.className = "hide";
+                shadow1 = document.createElement("div");
+                shadow1.className = "hide";
+            }
+            //拖拽函数
+            function drag(obj) {
+                obj.onmousedown = function(event) {
+                    if (bmove) {
+                        var oboxul = obox.getElementsByTagName("ul")[0];
+                        var oboxulli = oboxul.getElementsByTagName("li");
+                        arrX[obj.index] = arrY[obj.index] = 1000;
+                        var imin;
+                        var omin;
+                        var aX = obj.offsetLeft;
+                        var aY = obj.offsetTop;
+                        var disX = (event || window.event).clientX - obj.offsetLeft;
+                        var disY = (event || window.event).clientY - obj.offsetTop;
+                        obj.appendChild(shadow);
+                        obj.style.zIndex = zindex++;
+                        document.onmousemove = function(event) {
+                            obj.style.left = (event || window.event).clientX - disX + "px";
+                            obj.style.top = (event || window.event).clientY - disY + "px";
+                            //限制拖拽范围
+                            obj.offsetLeft < 0 ? obj.style.left = 0 : "";
+                            obj.offsetTop < 0 ? obj.style.top = 0 : "";
+                            obj.offsetLeft > (obox.offsetWidth - obj.offsetWidth - 2 * parseInt(getStyle(obox, "borderBottomWidth"))) ? obj.style.left = obox.offsetWidth - obj.offsetWidth - 2 * parseInt(getStyle(obox, "borderBottomWidth")) + "px" : "";
+                            obj.offsetTop > (obox.offsetHeight - obj.offsetHeight - 2 * parseInt(getStyle(obox, "borderBottomWidth"))) ? obj.style.top = obox.offsetHeight - obj.offsetHeight - 2 * parseInt(getStyle(obox, "borderBottomWidth")) + "px" : "";
+                            
+                            //计算最近的图片位置
+                            imin = getMin(obj);
+                            omin = oboxulli[imin];
+                            omin.appendChild(shadow1);
+                            obj.setCapture&&obj.setCapture();
+                            return false
+                        }
+
+                        document.onmouseup = function() {
+                            if (omin) {
+                                bmove = false;
+                                //放置时移除显示框
+                                obj.removeChild(shadow);
+                                omin.removeChild(shadow1);
+                                omin.style.zIndex = zindex++;
+                                obj.style.zIndex = zindex++;
+                                //交换运动
+                                move(obj, {
+                                    left: oboxulli[imin].offsetLeft,
+                                    top: oboxulli[imin].offsetTop
+                                });
+                                move(oboxulli[imin], {
+                                    left: aX,
+                                    top: aY
+                                }, function() {
+                                    bmove = true;
+                                    //数组回归正常生态
+                                    arrX[obj.index] = rightX[obj.index];
+                                    arrY[obj.index] = rightY[obj.index];
+                                    //以下为交换两张图片的文档流
+                                    var a = oboxul.removeChild(obj);
+                                    var b = oboxul.removeChild(omin);
+                                    if (obj.index == (oboxulli.length + 1) || omin.index == (oboxulli.length + 1)) {
+                                        obj.index == (oboxulli.length + 1) ? (oboxul.appendChild(b), oboxul.insertBefore(a, oboxulli[omin.index])) : (oboxul.appendChild(a), oboxul.insertBefore(b, oboxulli[obj.index]));
+                                    } else {
+                                        obj.index > omin.index ? (oboxul.insertBefore(a, oboxulli[omin.index]), oboxul.insertBefore(b, oboxulli[obj.index])) :
+                                            (oboxul.insertBefore(b, oboxulli[obj.index]), oboxul.insertBefore(a, oboxulli[omin.index]));
+                                    }
+                                    var c = oboxulli[obj.index].index;
+                                    oboxulli[obj.index].index = oboxulli[imin].index;
+                                    oboxulli[imin].index = c;
+                                    ifinish(oboxul);
+                                })
+                            } else {
+                                obj.removeChild(shadow);
+                            }
+                            document.onmousemove = null;
+                            document.onmouseup = null;
+                            obj.releaseCapture&&obj.releaseCapture();
+                        }
+                        return false
+                    } else {
+                        alert("没点击开始游戏或上一次拖拽没结束");
+                        return false
+                    }
+                }
+            }
+            function ifinish(obj) {
+                for (var i = 0; i < obj.children.length; i++) {
+                    var d = obj.children[i].children[0].src;
+                    var re = /_(\d)/;
+                    d = d.match(re);
+                    if (d[1] == i) {
+                        if (i == obj.children.length - 2) {
+                            time2 = new Date().getTime();
+                            alert("恭喜你，完成了拼图！用时："+(time2 - time1)/1000 + "s!");
+                        }
+                        continue
+                    } else {
+                        break
+                    }
+                }
+            }
+            function getMin(obj) {
+                var min = Math.abs(Math.sqrt((obj.offsetLeft - arrX[0]) * (obj.offsetLeft - arrX[0]) + (obj.offsetTop - arrY[0]) * (obj.offsetTop - arrY[0])));
+                var num = 0;
+                for (var i = 1; i < 9; i++) {
+                    var b = Math.abs(Math.sqrt((obj.offsetLeft - arrX[i]) * (obj.offsetLeft - arrX[i]) + (obj.offsetTop - arrY[i]) * (obj.offsetTop - arrY[i])));
+
+                    min > b ? (min = b, num = i) : "";
+                }
+                return num
+            }
+        }
+
+    </script>
+
+</head>
+
+<body>
+    <div id="small-img">
+        <img class="hover" src="image/games/1.jpg" width="100px" height="100px" class="hover" />
+        <img src="image/games/2.jpg" width="100px" height="100px" />
+        <img src="image/games/3.jpg" width="100px" height="100px" />
+    </div>
+
+    <button>Let's Go!</button>
+
+    <div id="box"></div>
+    <script src="mylibrary.js" type="text/javascript"></script>
+</body>
+
+</html>
